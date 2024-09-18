@@ -1,0 +1,86 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May  2 19:28:08 2023
+
+@author: user
+"""
+
+
+import tkinter as tk
+import os
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+import numpy as np 
+window = tk.Tk()
+
+import boto3
+from botocore.exceptions import NoCredentialsError
+
+ACCESS_KEY = '...........'
+SECRET_KEY = '.........'
+
+
+window.title("INTRUSION ATTACKER TO CLOUD")
+
+window.configure(background = "blue")
+
+window.geometry('1260x680')
+
+window.grid_rowconfigure(0, weight =1)
+
+window.grid_columnconfigure(0, weight =1)
+
+
+lb = tk.Label(window, text = "INTRUSION ATTACKER TO CLOUD", bg = 'black', fg = 'white', font = ('times', 30, 'bold'))
+lb.place(x=400, y=20)
+
+def upload():
+    global filename
+    text.delete('1.0', END)
+    filename1 = askopenfilename()
+    filename = filename1.split("/")[-1]
+    pathlabel.config(text=filename)
+    text.insert(END,"Dataset loaded\n\n")
+
+def upload_to_aws(local_file, bucket, s3_file):
+    s3 = boto3.client('s3', aws_access_key_id=ACCESS_KEY,
+                      aws_secret_access_key=SECRET_KEY)
+
+    try:
+        s3.upload_file(local_file, bucket, s3_file)
+        print("Upload Successful")
+        return True
+    except FileNotFoundError:
+        print("The file was not found")
+        return False
+    except NoCredentialsError:
+        print("Credentials not available")
+        return False
+
+
+def addtocloud():
+    global filename
+    upload_to_aws(filename, 'intrusion12345', "test_data.txt")
+
+font1 = ('times', 14, 'bold')
+text=Text(window,height=2,width=50)
+scroll=Scrollbar(text)
+text.configure(yscrollcommand=scroll.set)
+text.place(x=10,y=100)
+text.config(font=font1)
+
+            
+upload = Button(window, text="Upload Test Dataset", command=upload)
+upload.place(x=700,y=100)
+upload.config(font=font1)
+
+pathlabel = Label(window)
+pathlabel.config(bg='DarkOrange1', fg='white')  
+pathlabel.config(font=font1)           
+pathlabel.place(x=700,y=150)
+
+
+but = tk.Button(window, text = 'Add to cloud', command = addtocloud, bg = 'red', fg = 'white', width = 20, height =1)
+but.place(x = 700, y = 350)
+
+window.mainloop()
