@@ -1,0 +1,353 @@
+
+from tkinter import messagebox
+from tkinter import *
+from tkinter import simpledialog
+import tkinter
+from tkinter import filedialog
+from imutils import paths
+import matplotlib.pyplot as plt
+import numpy as np
+from tkinter.filedialog import askopenfilename
+import numpy as np 
+import pandas as pd 
+from sklearn import *
+from sklearn.model_selection import train_test_split 
+from sklearn import svm
+from sklearn.metrics import accuracy_score 
+from sklearn.feature_selection import SelectFromModel
+from sklearn.linear_model import Lasso
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+from keras.models import Sequential
+from keras.layers import Dense
+from tensorflow.keras.utils import to_categorical
+from keras.layers import  MaxPooling2D
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Convolution2D
+from keras.models import Sequential
+import pickle
+from sklearn.model_selection import train_test_split
+import cv2
+import os
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+from keras.callbacks import ModelCheckpoint
+import webbrowser
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+import seaborn as sns
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from imblearn.over_sampling import SMOTE
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
+from sklearn import svm
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.layers import Dense
+import boto3
+from botocore.exceptions import NoCredentialsError
+
+
+
+
+main = tkinter.Tk()
+main.title("Network Intrusion Detection")
+main.geometry("1300x1200")
+
+global filename
+global labels 
+global columns
+global balance_data
+global data
+global X, Y, X_train, X_test, y_train, y_test
+global svm_acc, ann_acc, classifier,existing_systemacc
+
+def isfloat(value):
+  try:
+    float(value)
+    return True
+  except ValueError:
+    return False
+
+
+def splitdataset(balance_data): 
+    X = balance_data.values[:, 0:38] 
+    Y = balance_data.values[:, 38]
+    print(X)
+    print(Y)
+    X_train, X_test, y_train, y_test = train_test_split( 
+    X, Y, test_size = 0.2, random_state = 0)
+    return X, Y, X_train, X_test, y_train, y_test 
+
+def upload():
+    global filename
+    text.delete('1.0', END)
+    filename = askopenfilename(initialdir = "UNSW-Dataset")
+    pathlabel.config(text=filename)
+    text.insert(END,"Dataset loaded\n\n")
+
+def preprocess(): 
+    global labels
+    global columns
+    global filename
+    
+    text.delete('1.0', END)
+    columns = ["duration","protocol_type","service","flag","src_bytes","dst_bytes","land","wrong_fragment","urgent","hot","num_failed_logins","logged_in","num_compromised","root_shell","su_attempted","num_root","num_file_creations","num_shells","num_access_files","num_outbound_cmds","is_host_login","is_guest_login","count","srv_count","serror_rate","srv_serror_rate","rerror_rate","srv_rerror_rate","same_srv_rate","diff_srv_rate","srv_diff_host_rate","dst_host_count","dst_host_srv_count","dst_host_same_srv_rate","dst_host_diff_srv_rate","dst_host_same_src_port_rate","dst_host_srv_diff_host_rate","dst_host_serror_rate","dst_host_srv_serror_rate","dst_host_rerror_rate","dst_host_srv_rerror_rate","label"]
+
+    labels = {"normal":0,"neptune":1,"warezclient":2,"ipsweep":3,"portsweep":4,"teardrop":5,"nmap":6,"satan":7,"smurf":8,"pod":9,"back":10,"guess_passwd":11,"ftp_write":12,"multihop":13,"rootkit":14,"buffer_overflow":15,"imap":16,"warezmaster":17,"phf":18,"land":19,"loadmodule":20,"spy":21,"perl":22,"saint":23,"mscan":24,"apache2":25,"snmpgetattack":26,"processtable":27,"httptunnel":28,"ps":29,"snmpguess":30,"mailbomb":31,"named":32,"sendmail":33,"xterm":34,"worm":35,"xlock":36,"xsnoop":37,"sqlattack":38,"udpstorm":39}
+    balance_data = pd.read_csv(filename)
+    dataset = ''
+    index = 0
+    cols = ''
+    for index, row in balance_data.iterrows():
+      for i in range(0,42):
+        if(isfloat(row[i])):
+          dataset+=str(row[i])+','
+          if index == 0:
+            cols+=columns[i]+','
+      if row[41] == 'normal':
+        dataset+='0'
+      if row[41] == 'anomaly':
+        dataset+='1'
+      if index == 0:
+        cols+='Label'
+      dataset+='\n'
+      index = 1;
+    
+    f = open("clean.txt", "w")
+    f.write(cols+"\n"+dataset)
+    f.close()
+    
+    text.insert(END,"Removed non numeric characters from dataset and saved inside clean.txt file\n\n")
+    text.insert(END,"Dataset Information\n\n")
+    text.insert(END,dataset+"\n\n")
+
+def generateModel():
+    text.delete('1.0', END)
+    global X, Y, X_train, X_test, y_train, y_test
+    global balance_data
+    balance_data = pd.read_csv("clean.txt") 
+    X, Y, X_train, X_test, y_train, y_test = splitdataset(balance_data)
+    text.insert(END,"Train & Test Model Generated\n\n")
+    text.insert(END,"Total Dataset Size : "+str(len(balance_data))+"\n")
+    text.insert(END,"Split Training Size : "+str(len(X_train))+"\n")
+    text.insert(END,"Split Test Size : "+str(len(X_test))+"\n")
+
+def prediction(X_test, cls): 
+    y_pred = cls.predict(X_test) 
+    for i in range(len(X_test)):
+      print("X=%s, Predicted=%s" % (X_test[i], y_pred[i]))
+    return y_pred 
+	
+# Function to calculate accuracy 
+def cal_accuracy(y_test, y_pred, details): 
+    accuracy = accuracy_score(y_test,y_pred)*100
+    text.insert(END,details+"\n\n")
+    text.insert(END,"Accuracy : "+str(accuracy)+"\n\n")
+    return accuracy  
+
+# Proposed system
+def runSPCCNN():
+    global proposed_systemacc;
+    filename = "D:/UPdated code/Code/Dataset/UNSW.csv"
+    dataseto = pd.read_csv(filename)
+    labels1 = np.unique(dataseto['label'])
+    label1 = dataseto.groupby('label').size()
+    print(dataseto.head())
+
+    cols1 = ['protocol_type', 'service', 'flag', 'label']
+    le11 = LabelEncoder()
+    le21 = LabelEncoder()
+    le31 = LabelEncoder()
+    le41 = LabelEncoder()
+    dataseto.fillna(0, inplace=True)
+    dataseto[cols1[0]] = pd.Series(le11.fit_transform(dataseto[cols1[0]].astype(str)))
+    dataseto[cols1[1]] = pd.Series(le21.fit_transform(dataseto[cols1[1]].astype(str)))
+    dataseto[cols1[2]] = pd.Series(le31.fit_transform(dataseto[cols1[2]].astype(str)))
+    dataseto[cols1[3]] = pd.Series(le41.fit_transform(dataseto[cols1[3]].astype(str)))
+    data = dataseto.values
+    Xo = data[:, 0:data.shape[1] - 1]
+    Yo = data[:, data.shape[1] - 1]
+    print(Xo)
+    print(Yo)
+    indices = np.arange(Xo.shape[0])  # shuffling the images
+    np.random.shuffle(indices)
+    Xo = Xo[indices]
+    Yo = Yo[indices]
+
+    # spilt
+    X_train11, X_test11, y_train11, y_test11 = train_test_split(Xo, Yo, test_size=0.2)
+    print(Xo.shape)
+    accuracy = []
+    precision = []
+    recall = []
+    fscore = []
+    X_train12 = np.reshape(X_train11, (X_train11.shape[0], X_train11.shape[1], 1, 1))
+    X_test12 = np.reshape(X_test11, (X_test11.shape[0], X_test11.shape[1], 1, 1))
+    y_train12 = to_categorical(y_train11)
+    y_test12 = to_categorical(y_test11)
+    #defining CNN2D layers
+    spc_cnn = Sequential()
+    #cnn layer to filtered features and then send to max pooling layer
+    spc_cnn.add(Convolution2D(32, (1, 1), input_shape = (X_train12.shape[1],X_train12.shape[2],X_train12.shape[3]), activation = 'relu'))
+    #max pooling layer remove irrrelavant and redundant fetaures and then select only optimized features to train SPC-CNN model
+    spc_cnn.add(MaxPooling2D(pool_size = (1, 1)))
+    spc_cnn.add(Convolution2D(32, (1, 1), activation = 'relu'))
+    spc_cnn.add(MaxPooling2D(pool_size = (1, 1)))
+    #flatten will be used to convert dataset features in to 2D format
+    spc_cnn.add(Flatten())
+    spc_cnn.add(Dense(units = 256, activation = 'relu'))
+    spc_cnn.add(Dense(units = y_train12.shape[1], activation = 'softmax'))
+    spc_cnn.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy']) #compiling custome model
+    if os.path.exists('model/model_weights.hdf5') == False:
+        model_check_point = ModelCheckpoint(filepath='model/model_weights.hdf5', verbose = 1, save_best_only = True)
+        #training the model
+        hist = spc_cnn.fit(X_train12, y_train12, batch_size = 16, epochs = 20, validation_data=(X_test12, y_test12), callbacks=[model_check_point], verbose=1)
+        f = open('model/history.pckl', 'wb')
+        pickle.dump(hist.history, f)
+        f.close()
+    else:
+        spc_cnn.load_weights('model/model_weights.hdf5')
+    predict = spc_cnn.predict(X_test12)
+    predict = np.argmax(predict, axis=1)
+    target = np.argmax(y_test12, axis=1)
+    proposed_systemacc=cal_accuracy(target,predict, "Proposed ADASYN-SPC-CNN")
+
+
+def runNB():
+    text.delete('1.0', END)
+    global nb_acc
+    global nbclassifier
+    global X, Y, X_train, X_test, y_train, y_test
+    total = X_train.shape[1];
+    # X_train1 = SelectKBest(chi2,15).fit_transform(X_train, y_train)
+    #X_train1 = SelectKBest(chi2, k=15).fit_transform(X_train, y_train)
+    #X_test1 = SelectKBest(chi2,k=15).fit_transform(X_test,y_test)
+    text.insert(END,"Total Features : "+str(total)+"\n")
+    text.insert(END,"Features set reduce after applying features selection concept : "+str((total - X_train.shape[1]))+"\n\n")
+    nbclassifier = GaussianNB()
+    nbclassifier.fit(X_train, y_train)      
+    prediction_data = prediction(X_test, nbclassifier) 
+    nb_acc = cal_accuracy(y_test, prediction_data,'NB Accuracy')
+    text.insert(END,"NB Accuracy : "+str(nb_acc)+"\n\n")
+
+
+def runANN():
+    text.delete('1.0', END)
+    global ann_acc
+    global annclassifier
+    global X, Y, X_train, X_test, y_train, y_test
+    total = X_train.shape[1];
+    #X_train = SelectKBest(chi2,k=25).fit_transform(X_train, y_train)
+    #X_test = SelectKBest(chi2,k=25).fit_transform(X_test,y_test)
+    text.insert(END,"Total Features : "+str(total)+"\n")
+    text.insert(END,"Features set reduce after applying features selection concept : "+str((total - X_train.shape[1]))+"\n\n")
+    annclassifier = MLPClassifier()
+    annclassifier.fit(X_train, y_train) 
+    
+    #ann_acc = ann_acc*100
+    prediction_data = prediction(X_test, annclassifier)
+    ann_acc = cal_accuracy(y_test, prediction_data,'ANN Accuracy')
+    text.insert(END,"ANN Accuracy : "+str(ann_acc)+"\n\n")    
+    
+ACCESS_KEY = '..........'
+SECRET_KEY = '.........'
+
+def detectAttack():
+    text.delete('1.0', END)
+    global X, Y, X_train, X_test, y_train, y_test
+    
+    BUCKET_NAME = 'intrusion12345' # replace with your bucket name
+    
+    
+    s3 = boto3.client('s3', aws_access_key_id='..........' , aws_secret_access_key='.............')
+    print('connection established')
+    
+    s3.download_file('intrusion12345','test_data.txt','test_data.txt')
+    
+    print('file downloaded as test_data.txt file')
+
+    filename = 'test_data.txt'
+    
+    #filename = filedialog.askopenfilename(initialdir="UNSW-Dataset")
+    test = pd.read_csv(filename)
+    text.insert(END,filename+" test file loaded\n");
+    y_pred = annclassifier.predict(test)
+    print(y_pred)
+    for i in range(len(test)):
+        if str(y_pred[i]) == '1.0':
+            text.insert(END,"X=%s, Predicted=%s" % (X_test[i], ' Infected. Detected Anamoly')+"\n\n")
+        else:
+            text.insert(END,"X=%s, Predicted=%s" % (X_test[i], 'Normal')+"\n\n")
+
+
+def graph():
+    height = [nb_acc,ann_acc,proposed_systemacc]
+    bars = ('NB Accuracy', 'ANN Accuracy','Proposed Algorithm')
+    y_pos = np.arange(len(bars))
+    plt.bar(y_pos, height)
+    plt.xticks(y_pos, bars)
+    plt.show()   
+  
+
+font = ('times', 16, 'bold')
+title = Label(main, text='Deep Learning Based Network Intrusion Detection')
+title.config(bg='PaleGreen2', fg='Khaki4')  
+title.config(font=font)           
+title.config(height=3, width=120)       
+title.place(x=0,y=5)
+
+font1 = ('times', 14, 'bold')
+
+
+upload = Button(main, text="Upload UNSW Dataset", command=upload)
+upload.place(x=700,y=100)
+upload.config(font=font1)  
+
+
+
+pathlabel = Label(main)
+pathlabel.config(bg='DarkOrange1', fg='white')  
+pathlabel.config(font=font1)           
+pathlabel.place(x=700,y=150)
+
+preprocess = Button(main, text="Feature Selection Using ADASYN", command=preprocess)
+preprocess.place(x=700,y=200)
+preprocess.config(font=font1) 
+
+model = Button(main, text="Generate Training Model", command=generateModel)
+model.place(x=700,y=250)
+model.config(font=font1) 
+
+runsvm = Button(main, text="Run NB Algorithm", command=runNB)
+runsvm.place(x=700,y=300)
+runsvm.config(font=font1) 
+
+annButton = Button(main, text="Run ANN Algorithm", command=runANN)
+annButton.place(x=700,y=350)
+annButton.config(font=font1) 
+
+model = Button(main, text="Run Proposed System", command=runSPCCNN)
+model.place(x=700,y=400)
+model.config(font=font1)
+
+attackButton = Button(main, text="Download Test Data & Detect Attack", command=detectAttack)
+attackButton.place(x=700,y=450)
+attackButton.config(font=font1)
+
+graphButton = Button(main, text="Accuracy Graph", command=graph)
+graphButton.place(x=700,y=500)
+graphButton.config(font=font1) 
+
+font1 = ('times', 12, 'bold')
+text=Text(main,height=30,width=80)
+scroll=Scrollbar(text)
+text.configure(yscrollcommand=scroll.set)
+text.place(x=10,y=100)
+text.config(font=font1)
+
+main.config(bg='PeachPuff2')
+main.mainloop()
