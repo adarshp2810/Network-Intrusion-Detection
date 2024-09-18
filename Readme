@@ -1,0 +1,65 @@
+This project is a network intrusion detection system using deep learning techniques. It classifies network traffic as either normal or anomalous based on the UNSW dataset, employing a variety of algorithms like Naive Bayes (NB), Artificial Neural Networks (ANN), and a custom ADASYN-SPC-CNN model. The project integrates various libraries and tools for data preprocessing, feature selection, and model training, and can be configured to detect network attacks using test data stored on AWS S3.
+
+Requirements
+Python 3.7 or higher
+Required libraries (Install with pip install):
+imutils, matplotlib, numpy, pandas, scikit-learn, keras, tensorflow, seaborn, boto3, imblearn, opencv-python
+AWS S3 account
+You need to provide your own AWS Access Key and Secret Key to download test data from your S3 bucket.
+Dataset
+The UNSW Dataset is used for training and testing.
+Make sure the dataset is available in CSV format.
+Installation
+Clone the Repository
+Download or clone the project using the following command:
+
+bash
+Copy code
+git clone https://github.com/your-repository/network-intrusion-detection
+Install Dependencies
+Install all required Python libraries by running:
+
+bash
+Copy code
+pip install -r requirements.txt
+AWS Setup
+Before running the intrusion detection system, you need to configure AWS credentials. Replace the placeholders with your own Access Key and Secret Key in the detectAttack() function:
+
+python
+Copy code
+ACCESS_KEY = 'YOUR_AWS_ACCESS_KEY'
+SECRET_KEY = 'YOUR_AWS_SECRET_KEY'
+Run the Application
+To run the application, execute:
+
+bash
+Copy code
+python intrusion_detection.py
+Features
+Upload Dataset: Upload the UNSW dataset for training.
+Preprocessing: Selects the relevant features using ADASYN for better detection accuracy.
+Training Models: Trains multiple models (NB, ANN, SPC-CNN) using the processed dataset.
+Intrusion Detection: Downloads test data from an AWS S3 bucket and uses the trained models to detect anomalies in real-time.
+Accuracy Graph: Compare the performance of different models visually.
+Instructions
+Upload UNSW Dataset: Use the "Upload UNSW Dataset" button to upload the dataset for feature extraction and training.
+
+Preprocess Data: Click "Feature Selection Using ADASYN" to preprocess the dataset and extract features using ADASYN.
+
+Generate Model: Click "Generate Training Model" to split the dataset into training and testing data, and to create a model for predictions.
+
+Run Algorithms:
+
+Use "Run NB Algorithm" to run the Naive Bayes classifier.
+Use "Run ANN Algorithm" to run the Artificial Neural Network.
+Use "Run Proposed System" to run the ADASYN-SPC-CNN model for anomaly detection.
+Detect Attack: To detect attacks, click "Download Test Data & Detect Attack". Ensure the test data is available on your AWS S3 bucket.
+
+Graph: Visualize the accuracy comparison between different models by clicking on "Accuracy Graph".
+
+AWS Setup
+Ensure the following in your AWS S3 bucket:
+
+Bucket Name: intrusion12345 (or modify in the code)
+File: The test dataset file should be uploaded to your S3 bucket under the name test_data.txt.
+Make sure your AWS credentials are valid, and your S3 permissions are correctly configured to allow access from your local environment.
